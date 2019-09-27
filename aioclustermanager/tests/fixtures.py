@@ -7,36 +7,34 @@ import os
 import pytest
 
 
-@pytest.fixture(scope='function')
+@pytest.fixture(scope="function")
 async def k8s_config():
     return get_k8s_config()
 
 
-@pytest.fixture(scope='function')
+@pytest.fixture(scope="function")
 async def nomad_config():
-    config_nomad = {
-        'endpoint': os.environ.get('TEST_NOMAD_ENDPOINT', 'localhost:4646')
-    }
+    config_nomad = {"endpoint": os.environ.get("TEST_NOMAD_ENDPOINT", "localhost:4646")}
     return config_nomad
 
 
-@pytest.fixture(scope='function')
+@pytest.fixture(scope="function")
 async def kubernetes(k8s_config):
 
     async with K8SContextManager(k8s_config) as context:
         cm = ClusterManager(context)
-        await cm.delete_namespace('aiocluster-test')
-        await cm.create_namespace('aiocluster-test')
+        await cm.delete_namespace("aiocluster-test")
+        await cm.create_namespace("aiocluster-test")
         yield cm
-        await cm.delete_namespace('aiocluster-test')
+        await cm.delete_namespace("aiocluster-test")
 
 
-@pytest.fixture(scope='function')
+@pytest.fixture(scope="function")
 async def nomad(nomad_config):
 
     async with NomadContextManager(nomad_config) as context:
         cm = ClusterManager(context)
-        await cm.delete_namespace('aiocluster-test')
-        await cm.create_namespace('aiocluster-test')
+        await cm.delete_namespace("aiocluster-test")
+        await cm.create_namespace("aiocluster-test")
         yield cm
-        await cm.delete_namespace('aiocluster-test')
+        await cm.delete_namespace("aiocluster-test")

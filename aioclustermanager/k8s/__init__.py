@@ -56,14 +56,16 @@ class Configuration:
             self.headers = {"Authorization": "Bearer " + b64decode(self.environment["token"]).decode("utf-8")}
 
         # We create the aiohttp client session
-        if self.environment.get("skip_ssl", "false").lower() == "false":
+        if self.environment.get("skip_ssl", "false").lower() != "false":
             self.ssl_context = False
         else:
             if self.ssl_context is None:
                 self.ssl_context = ssl.SSLContext()
 
             if self.environment.get("ca") is not None:
-                self.ssl_context.load_verify_locations(cadata=b64decode(self.environment["ca"]))
+                self.ssl_context.load_verify_locations(
+                    cadata=b64decode(self.environment["ca"]).decode("utf-8")
+                )
             elif self.environment.get("ca_file") is not None:
                 self.ssl_context = ssl.SSLContext()
                 self.ssl_context.load_verify_locations(cafile=self.environment["ca_file"])

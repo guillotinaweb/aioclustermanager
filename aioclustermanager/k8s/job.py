@@ -53,6 +53,9 @@ class K8SJob(Job):
         job_info["spec"]["template"]["spec"]["containers"][0]["name"] = name
         job_info["spec"]["template"]["spec"]["containers"][0]["image"] = image
 
+        if "labels" in kw and kw["labels"] is not None:
+            job_info["metadata"]["labels"] = kw["labels"]
+
         if "pullSecrets" in kw and kw["pullSecrets"] is not None:
             job_info["spec"]["template"]["spec"]["imagePullSecrets"] = []
             job_info["spec"]["template"]["spec"]["imagePullSecrets"].append({"name": kw["pullSecrets"]})

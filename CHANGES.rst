@@ -1,7 +1,8 @@
 0.3.22 (unreleased)
 -------------------
 
-- Nothing changed yet.
+- Adding labels on job and fixing tests
+  [bloodbare]
 
 
 0.3.21 (2019-07-25)
