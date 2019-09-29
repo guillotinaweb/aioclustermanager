@@ -56,7 +56,7 @@ class Configuration:
             self.headers = {"Authorization": "Bearer " + b64decode(self.environment["token"]).decode("utf-8")}
 
         # We create the aiohttp client session
-        if self.environment.get("skip_ssl", "false").lower() != "false":
+        if self.environment.get("skip_ssl", "false").lower() == "true":
             self.ssl_context = False
         else:
             if self.ssl_context is None:
