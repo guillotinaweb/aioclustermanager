@@ -74,6 +74,10 @@ def get_k8s_config():
         "true" if cluster_info["cluster"].get("insecure-skip-tls-verify", False) else "false"
     )
     if config_k8s["skip_ssl"] == "false":
-        config_k8s["ca"] = cluster_info["cluster"]["certificate-authority-data"]
+        ca_info = cluster_info["cluster"].get("certificate-authority-data")
+        if ca_info is None:
+            ca_info = cluster_info["cluster"].get("certificate-authority")
+
+        config_k8s["ca"] = ca_info
 
     return config_k8s
