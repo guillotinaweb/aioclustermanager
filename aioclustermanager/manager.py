@@ -222,7 +222,7 @@ class ClusterManager:
 
     async def deploy_wait_available(self, namespace, name, timeout=60):
         return await self.caller.wait_available('deploy', namespace, name, timeout=timeout)
-        
+
     async def create_deploy(
             self, namespace, name, image, labels,
             command=None, args=None,

@@ -52,8 +52,6 @@ async def test_get_deploy_k8s(kubernetes):
     assert job_info is None
 
 
-
-
 async def test_get_jobs_k8s(kubernetes):
     # We clean up all the jobs on the namespace
 

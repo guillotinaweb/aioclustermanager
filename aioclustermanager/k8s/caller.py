@@ -172,7 +172,7 @@ class K8SCaller(object):
         if result is None:
             return None
         else:
-            return K8SDeploy(data=result)    
+            return K8SDeploy(data=result)
 
     async def get_tfjob(self, namespace, name):
         url = GET_OPS["tfjob"]

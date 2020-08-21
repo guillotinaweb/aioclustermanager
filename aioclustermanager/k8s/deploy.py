@@ -9,9 +9,7 @@ K8S_DEPLOY = {
     "spec": {
         "replicas": 3,
         "revisionHistoryLimit": 2,
-        "selector": {
-            "matchLabels": {}
-        },
+        "selector": {"matchLabels": {}},
         "template": {
             "metadata": {"labels": {}},
             "spec": {
@@ -19,12 +17,10 @@ K8S_DEPLOY = {
                     {
                         "name": "",
                         "image": "",
-                        "resources": {
-                            "limits": {}
-                        },
+                        "resources": {"limits": {}},
                         "imagePullPolicy": "IfNotPresent",
-                        "ports": []
-                        }
+                        "ports": [],
+                    }
                 ],
             },
         },
@@ -70,29 +66,43 @@ class K8SDeploy(Deploy):
 
         if "pullSecrets" in kw and kw["pullSecrets"] is not None:
             deploy_info["spec"]["template"]["spec"]["imagePullSecrets"] = []
-            deploy_info["spec"]["template"]["spec"]["imagePullSecrets"].append({"name": kw["pullSecrets"]})
+            deploy_info["spec"]["template"]["spec"]["imagePullSecrets"].append(
+                {"name": kw["pullSecrets"]}
+            )
 
         if "imagePullPolicy" in kw and kw["imagePullPolicy"] is not None:
-            deploy_info["spec"]["template"]["spec"]["containers"][0]["imagePullPolicy"] = kw[
+            deploy_info["spec"]["template"]["spec"]["containers"][0][
+                "imagePullPolicy"
+            ] = kw[
                 "imagePullPolicy"
             ]  # noqa
 
         if "entrypoint" in kw and kw["entrypoint"] is not None:
-            deploy_info["spec"]["template"]["spec"]["containers"][0]["entrypoint"] = kw["entrypoint"]  # noqa
+            deploy_info["spec"]["template"]["spec"]["containers"][0]["entrypoint"] = kw[
+                "entrypoint"
+            ]  # noqa
 
         if "command" in kw and kw["command"] is not None:
-            deploy_info["spec"]["template"]["spec"]["containers"][0]["command"] = kw["command"]  # noqa
+            deploy_info["spec"]["template"]["spec"]["containers"][0]["command"] = kw[
+                "command"
+            ]  # noqa
 
         if "args" in kw and kw["args"] is not None:
-            deploy_info["spec"]["template"]["spec"]["containers"][0]["args"] = kw["args"]  # noqa
+            deploy_info["spec"]["template"]["spec"]["containers"][0]["args"] = kw[
+                "args"
+            ]  # noqa
 
         if "mem_limit" in kw and kw["mem_limit"] is not None:
-            deploy_info["spec"]["template"]["spec"]["containers"][0]["resources"]["limits"]["memory"] = kw[
+            deploy_info["spec"]["template"]["spec"]["containers"][0]["resources"][
+                "limits"
+            ]["memory"] = kw[
                 "mem_limit"
             ]  # noqa
 
         if "cpu_limit" in kw and kw["cpu_limit"] is not None:
-            deploy_info["spec"]["template"]["spec"]["containers"][0]["resources"]["limits"]["cpu"] = kw[
+            deploy_info["spec"]["template"]["spec"]["containers"][0]["resources"][
+                "limits"
+            ]["cpu"] = kw[
                 "cpu_limit"
             ]  # noqa
 
@@ -100,19 +110,27 @@ class K8SDeploy(Deploy):
             deploy_info["spec"]["template"]["spec"]["volumes"] = kw["volumes"]
 
         if "volumeMounts" in kw and kw["volumeMounts"] is not None:
-            deploy_info["spec"]["template"]["spec"]["containers"][0]["volumeMounts"] = kw["volumeMounts"]  # noqa
+            deploy_info["spec"]["template"]["spec"]["containers"][0][
+                "volumeMounts"
+            ] = kw[
+                "volumeMounts"
+            ]  # noqa
 
         if "replicas" in kw and kw["replicas"] is not None:
             deploy_info["spec"]["replicas"] = kw["replicas"]
 
         if "envFrom" in kw and kw["envFrom"] is not None:
-            deploy_info["spec"]["template"]["spec"]["containers"][0]["envFrom"] = kw["envFrom"]  # noqa
+            deploy_info["spec"]["template"]["spec"]["containers"][0]["envFrom"] = kw[
+                "envFrom"
+            ]  # noqa
 
         if "envvars" in kw and kw["envvars"] is not None:
             envlist = []
             for key, value in kw["envvars"].items():
                 envlist.append({"name": key, "value": value})
-            deploy_info["spec"]["template"]["spec"]["containers"][0]["env"] = envlist  # noqa
+            deploy_info["spec"]["template"]["spec"]["containers"][0][
+                "env"
+            ] = envlist  # noqa
 
         return deploy_info
 
