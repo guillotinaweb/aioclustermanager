@@ -1,7 +1,8 @@
 0.3.24 (unreleased)
 -------------------
 
-- Nothing changed yet.
+- Adding deployment logic
+  [bloodbare]
 
 
 0.3.23 (2019-10-07)

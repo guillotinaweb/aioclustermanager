@@ -4,6 +4,56 @@ import asyncio
 pytestmark = pytest.mark.asyncio
 
 
+async def test_get_deploy_k8s(kubernetes):
+    # We clean up all the jobs on the namespace
+
+    result = await kubernetes.get_nodes()
+    assert len(result) > 0
+
+    jobs_info = await kubernetes.list_deploys("aiocluster-test")
+    assert jobs_info.total == 0
+
+    await kubernetes.create_deploy(
+        "aiocluster-test",  # namespace
+        "test-deploy",  # jobid
+        "nginx",  # image
+        {
+            "app": "nginx"
+        }
+    )
+
+    deploy_info = await kubernetes.get_deploy("aiocluster-test", "test-deploy")
+    assert deploy_info.id == "test-deploy"
+
+    deploys_info = await kubernetes.list_deploys("aiocluster-test")
+    assert deploys_info.total == 1
+
+    await kubernetes.deploy_wait_available("aiocluster-test", "test-deploy")
+
+    pods = await kubernetes.list_deploy_pods("aiocluster-test", "test-deploy")
+    assert len(pods) > 0
+
+    log = await kubernetes.get_execution_log("aiocluster-test", "test-deploy", pods[0].id)
+    assert "ready for start up" in log
+
+    result = await kubernetes.get_scale_deploy("aiocluster-test", "test-deploy")
+    assert result == 1
+
+    result = await kubernetes.set_scale_deploy("aiocluster-test", "test-deploy", 3)
+    assert result['spec']['replicas'] == 3
+
+    deploy_info = await kubernetes.get_deploy("aiocluster-test", "test-deploy")
+    assert deploy_info._raw['spec']['replicas'] == 3
+
+    result = await kubernetes.delete_deploy("aiocluster-test", "test-deploy", True, timeout=120)
+    assert result is True
+
+    job_info = await kubernetes.get_deploy("aiocluster-test", "test-deploy")
+    assert job_info is None
+
+
+
+
 async def test_get_jobs_k8s(kubernetes):
     # We clean up all the jobs on the namespace
 

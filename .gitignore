@@ -3,6 +3,7 @@ lib
 bin
 __pycache__
 .cache
+.python-version
 pip-selfcheck.json
 *.egg-info
 *.whl

@@ -206,3 +206,44 @@ class ClusterManager:
 
     async def get_config_maps(self, namespace, labels=None):
         return await self.caller.get_config_maps(namespace, labels or {})
+
+    async def list_deploy_pods(self, namespace, name):
+        deploy = await self.caller.get_deploy(namespace, name)
+        return await self.caller.get_pods(namespace, name, deploy.selector)
+
+    async def list_deploys(self, namespace):
+        return await self.caller.list_deploys(namespace)
+
+    async def get_deploy(self, namespace, name):
+        return await self.caller.get_deploy(namespace, name)
+
+    async def delete_deploy(self, namespace, name, wait, timeout=60):
+        return await self.caller.delete_deploy(namespace, name, wait, timeout=60)
+
+    async def deploy_wait_available(self, namespace, name, timeout=60):
+        return await self.caller.wait_available('deploy', namespace, name, timeout=timeout)
+        
+    async def create_deploy(
+            self, namespace, name, image, labels,
+            command=None, args=None,
+            cpu_limit=None, mem_limit=None,
+            envvars={}, volumes=None, volumeMounts=None,
+            envFrom=None, entrypoint=None, replicas=1,
+            delete=False, timeout=30, wait=True, **kw):
+        exist = await self.caller.get_deploy(namespace, name)
+        if exist is not None and delete:
+            await self.delete_deploy(namespace, name, wait=True)
+            exist = None
+
+        if exist is None:
+            await self.caller.create_deploy(
+                namespace, name, image, labels,
+                command=command, args=args, replicas=replicas,
+                cpu_limit=cpu_limit, mem_limit=mem_limit,
+                envvars=envvars, volumes=volumes, volumeMounts=volumeMounts,
+                envFrom=envFrom, entrypoint=entrypoint, **kw)
+            if wait:
+                await self.caller.wait_added('deploy', namespace, name=name,
+                                             timeout=timeout)
+            return True
+        return False

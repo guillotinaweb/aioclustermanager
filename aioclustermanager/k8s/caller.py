@@ -1,6 +1,8 @@
 from aioclustermanager.k8s import const
 from aioclustermanager.k8s.delete import K8SDelete
 from aioclustermanager.k8s.executions_list import K8SExecutionList
+from aioclustermanager.k8s.deploy_list import K8SDeployList
+from aioclustermanager.k8s.deploy import K8SDeploy
 from aioclustermanager.k8s.job import K8SJob
 from aioclustermanager.k8s.job_list import K8SJobList
 from aioclustermanager.k8s.namespace import K8SNamespace
@@ -10,6 +12,7 @@ from aioclustermanager.k8s.tf_job import K8STFJob
 from aioclustermanager.k8s.tf_job_list import K8STFJobList
 from aioclustermanager.k8s.scale import K8SScale
 
+import asyncio
 import concurrent
 import json
 import logging
@@ -19,6 +22,7 @@ logger = logging.getLogger(__name__)
 WATCH_OPS = {
     "namespace": "{scheme}://{endpoint}/api/v1/watch/namespaces/{namespace}",
     "job": "{scheme}://{endpoint}/apis/batch/v1/watch/namespaces/{namespace}/jobs/{name}",  # noqa
+    "deploy": "{scheme}://{endpoint}/apis/apps/v1/watch/namespaces/{namespace}/deployments/{name}",  # noqa
     "execution": "{scheme}://{endpoint}/api/v1/watch/namespaces/{namespace}/pods/{name}",  # noqa
     "tfjob": "{scheme}://{endpoint}/apis/kubeflow.org/v1alpha1/watch/namespaces/{namespace}/tfjobs/{name}",  # noqa
 }
@@ -26,8 +30,11 @@ WATCH_OPS = {
 GET_OPS = {
     "namespace": "{scheme}://{endpoint}/api/v1/namespaces/{namespace}",
     "list_jobs": "{scheme}://{endpoint}/apis/batch/v1/namespaces/{namespace}/jobs",
+    "list_deploys": "{scheme}://{endpoint}/apis/apps/v1/namespaces/{namespace}/deployments",
+    "deploy": "{scheme}://{endpoint}/apis/apps/v1/namespaces/{namespace}/deployments/{name}/status",  # noqa
     "job": "{scheme}://{endpoint}/apis/batch/v1/namespaces/{namespace}/jobs/{name}/status",  # noqa
     "executions": "{scheme}://{endpoint}/api/v1/namespaces/{namespace}/pods/?labelSelector=job-name={name}",  # noqa
+    "deploy_pods": "{scheme}://{endpoint}/api/v1/namespaces/{namespace}/pods/?{labelselector}",  # noqa
     "tfjob": "{scheme}://{endpoint}/apis/kubeflow.org/v1alpha1/namespaces/{namespace}/tfjobs/{name}",  # noqa
     "list_tfjobs": "{scheme}://{endpoint}/apis/kubeflow.org/v1alpha1/namespaces/{namespace}/tfjobs",  # noqa
     "log": "{scheme}://{endpoint}/api/v1/namespaces/{namespace}/pods/{name}/log",
@@ -47,6 +54,7 @@ PUT_OPS = {
 POST_OPS = {
     "namespace": ("{scheme}://{endpoint}/api/v1/namespaces", "v1"),
     "job": ("{scheme}://{endpoint}/apis/batch/v1/namespaces/{namespace}/jobs", "batch/v1"),  # noqa
+    "deploy": ("{scheme}://{endpoint}/apis/apps/v1/namespaces/{namespace}/deployments", "apps/v1"),  # noqa
     "tfjob": (
         "{scheme}://{endpoint}/apis/kubeflow.org/v1alpha1/namespaces/{namespace}/tfjobs",
         "kubeflow.org/v1alpha1",
@@ -57,6 +65,7 @@ POST_OPS = {
 DELETE_OPS = {
     "namespace": ("{scheme}://{endpoint}/api/v1/namespaces/{namespace}", "v1"),
     "execution": ("{scheme}://{endpoint}/api/v1/namespaces/{namespace}/pods/{name}", "v1"),  # noqa
+    "deploy": ("{scheme}://{endpoint}/apis/apps/v1/namespaces/{namespace}/deployments/{name}", "v1"),  # noqa
     "job": ("{scheme}://{endpoint}/apis/batch/v1/namespaces/{namespace}/jobs/{name}", "batch/v1"),  # noqa
     "tfjob": (
         "{scheme}://{endpoint}/apis/kubeflow.org/v1alpha1/namespaces/{namespace}/tfjobs/{name}",
@@ -99,6 +108,11 @@ class K8SCaller(object):
         url = url.format(namespace=namespace, endpoint=self.endpoint, scheme=self.scheme)
         obj = K8SDelete()
         return await self.delete(url, version, obj.payload())
+
+    async def wait_available(self, kind, namespace, name=None, timeout=30):
+        url = WATCH_OPS[kind]
+        url = url.format(namespace=namespace, name=name, endpoint=self.endpoint, scheme=self.scheme)
+        return await self.watch_status_condition(url, value="Available", timeout=timeout)
 
     async def wait_added(self, kind, namespace, name=None, timeout=30):
         url = WATCH_OPS[kind]
@@ -151,6 +165,15 @@ class K8SCaller(object):
         else:
             return K8SJob(data=result)
 
+    async def get_deploy(self, namespace, name):
+        url = GET_OPS["deploy"]
+        url = url.format(namespace=namespace, name=name, endpoint=self.endpoint, scheme=self.scheme)
+        result = await self.get(url)
+        if result is None:
+            return None
+        else:
+            return K8SDeploy(data=result)    
+
     async def get_tfjob(self, namespace, name):
         url = GET_OPS["tfjob"]
         url = url.format(namespace=namespace, name=name, endpoint=self.endpoint, scheme=self.scheme)
@@ -163,6 +186,16 @@ class K8SCaller(object):
     async def get_job_executions(self, namespace, name):
         url = GET_OPS["executions"]
         url = url.format(namespace=namespace, name=name, endpoint=self.endpoint, scheme=self.scheme)
+        result = await self.get(url)
+        if result is None:
+            return None
+        else:
+            return K8SExecutionList(data=result)
+
+    async def get_pods(self, namespace, name, labels):
+        url = GET_OPS["deploy_pods"]
+        labelselector = "&".join([f"labelSelector={key}={value}" for key, value in labels.items()])
+        url = url.format(namespace=namespace, name=name, endpoint=self.endpoint, scheme=self.scheme, labelselector=labelselector)
         result = await self.get(url)
         if result is None:
             return None
@@ -188,28 +221,58 @@ class K8SCaller(object):
         url, version = DELETE_OPS["job"]
         url = url.format(namespace=namespace, name=name, endpoint=self.endpoint, scheme=self.scheme)
         obj = K8SDelete(purge)
-        await self.delete(url, version, obj.payload())
+        to_delete = self.delete(url, version, obj.payload())
         if wait:
-            return await self.wait_deleted("job", namespace, name)
+            to_wait = self.wait_deleted("job", namespace, name)
+            await asyncio.gather(to_wait, to_delete)
+        else:
+            await to_delete
+        return True
+
+    async def delete_deploy(self, namespace, name, wait=False, purge=True, timeout=60):
+        url, version = DELETE_OPS["deploy"]
+        url = url.format(namespace=namespace, name=name, endpoint=self.endpoint, scheme=self.scheme)
+        obj = K8SDelete(purge)
+        to_delete = self.delete(url, version, obj.payload())
+        if wait:
+            to_wait = self.wait_deleted("deploy", namespace, name, timeout=timeout)
+            await asyncio.gather(to_wait, to_delete)
+        else:
+            await to_delete
         return True
 
     async def delete_execution(self, namespace, job_id, execution_id, wait=False, purge=True):
         url, version = DELETE_OPS["execution"]
         url = url.format(namespace=namespace, name=execution_id, endpoint=self.endpoint, scheme=self.scheme)
         obj = K8SDelete(purge)
-        await self.delete(url, version, obj.payload())
+        to_delete = self.delete(url, version, obj.payload())
         if wait:
-            return await self.wait_deleted("execution", namespace, execution_id)
+            to_wait = self.wait_deleted("execution", namespace, execution_id)
+            return await asyncio.gather(to_wait, to_delete)
+        else:
+            await to_delete
         return True
 
     async def delete_tfjob(self, namespace, name, wait=False):
         url, version = DELETE_OPS["tfjob"]
         url = url.format(namespace=namespace, name=name, endpoint=self.endpoint, scheme=self.scheme)
         obj = K8SDelete()
-        await self.delete(url, version, obj.payload())
+        to_delete = self.delete(url, version, obj.payload())
         if wait:
-            return await self.wait_deleted("tfjob", namespace, name)
+            to_wait = self.wait_deleted("tfjob", namespace, name)
+            await asyncio.gather(to_wait, to_delete)
+        else:
+            await to_delete
         return True
+
+    async def list_deploys(self, namespace):
+        url = GET_OPS["list_deploys"]
+        url = url.format(namespace=namespace, endpoint=self.endpoint, scheme=self.scheme)
+        result = await self.get(url)
+        if result is None:
+            return None
+        else:
+            return K8SDeployList(data=result)
 
     async def list_jobs(self, namespace):
         url = GET_OPS["list_jobs"]
@@ -228,6 +291,45 @@ class K8SCaller(object):
             return None
         else:
             return K8STFJobList(data=result)
+
+    async def create_deploy(
+        self,
+        namespace,
+        name,
+        image,
+        labels,
+        command=None,
+        args=None,
+        cpu_limit=None,
+        mem_limit=None,
+        envvars={},
+        volumes=None,
+        volumeMounts=None,
+        envFrom=None,
+        entrypoint=None,
+        replicas=1,
+        **kw,
+    ):
+        url, version = POST_OPS["deploy"]
+        url = url.format(namespace=namespace, name=name, endpoint=self.endpoint, scheme=self.scheme)
+        obj = K8SDeploy(
+            namespace=namespace,
+            labels=labels,
+            name=name,
+            image=image,
+            command=command,
+            args=args,
+            cpu_limit=cpu_limit,
+            mem_limit=mem_limit,
+            envvars=envvars,
+            volumes=volumes,
+            volumeMounts=volumeMounts,
+            envFrom=envFrom,
+            entrypoint=entrypoint,
+            replicas=replicas,
+            **kw,
+        )
+        return await self.post(url, version, obj.payload())
 
     async def create_job(
         self,
@@ -343,6 +445,20 @@ class K8SCaller(object):
             async for data in self._watch(url, timeout):
                 json_data = json.loads(data)
                 if json_data["type"] == value:
+                    break
+        except concurrent.futures._base.TimeoutError:
+            pass
+
+    async def watch_status_condition(self, url, value=None, timeout=20):
+        try:
+            found = False
+            async for data in self._watch(url, timeout):
+                json_data = json.loads(data)
+                for condition in json_data.get("object", {}).get("status", {}).get("conditions", []):  # noqa
+                    if condition.get("type", "") == value and condition.get("status", "") == "True":  # noqa
+                        found = True
+                        break
+                if found:
                     break
         except concurrent.futures._base.TimeoutError:
             pass
