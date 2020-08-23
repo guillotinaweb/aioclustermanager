@@ -14,8 +14,6 @@ K8S_DEPLOY = {
             "metadata": {"labels": {}},
             "spec": {
                 "terminationGracePeriodSeconds": 10,
-                "affinity": {},
-                "tolerations": {},
                 "dnsPolicy": "ClusterFirst",
                 "containers": [
                     {
