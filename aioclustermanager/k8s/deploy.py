@@ -7,19 +7,23 @@ K8S_DEPLOY = {
     "kind": "Deployment",
     "metadata": {"name": "", "namespace": ""},
     "spec": {
-        "replicas": 3,
+        "replicas": 1,
         "revisionHistoryLimit": 2,
         "selector": {"matchLabels": {}},
         "template": {
             "metadata": {"labels": {}},
             "spec": {
+                "terminationGracePeriodSeconds": 10,
+                "affinity": {},
+                "tolerations": {},
+                "dnsPolicy": "ClusterFirst",
                 "containers": [
                     {
                         "name": "",
                         "image": "",
                         "resources": {"limits": {}},
                         "imagePullPolicy": "IfNotPresent",
-                        "ports": [],
+                        "ports": []
                     }
                 ],
             },
@@ -131,6 +135,15 @@ class K8SDeploy(Deploy):
             deploy_info["spec"]["template"]["spec"]["containers"][0][
                 "env"
             ] = envlist  # noqa
+
+        if "annotations" in kw and kw["annotations"] is not None:
+            deploy_info["spec"]["template"]["metadata"]["annotations"] = kw["annotations"]
+
+        if "affinity" in kw and kw["affinity"] is not None:
+            deploy_info["spec"]["template"]["spec"]["affinity"] = kw["affinity"]
+
+        if "tolerations" in kw and kw["tolerations"] is not None:
+            deploy_info["spec"]["template"]["spec"]["tolerations"] = kw["tolerations"]
 
         return deploy_info
 

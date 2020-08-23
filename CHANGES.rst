@@ -1,7 +1,8 @@
 0.3.25 (unreleased)
 -------------------
 
-- Nothing changed yet.
+- Adding affinity and toleration
+  [bloodbare]
 
 
 0.3.24 (2020-08-21)
