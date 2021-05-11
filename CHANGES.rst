@@ -1,7 +1,8 @@
 0.3.28 (unreleased)
 -------------------
 
-- Nothing changed yet.
+- Added support to set a job containers as privileged
+  [sunbit]
 
 
 0.3.27 (2020-11-11)

@@ -345,6 +345,7 @@ class K8SCaller(object):
         volumeMounts=None,
         envFrom=None,
         entrypoint=None,
+        privileged=False
         **kw,
     ):
         url, version = POST_OPS["job"]
@@ -362,6 +363,7 @@ class K8SCaller(object):
             volumeMounts=volumeMounts,
             envFrom=envFrom,
             entrypoint=entrypoint,
+            privileged=privileged
             **kw,
         )
         return await self.post(url, version, obj.payload())

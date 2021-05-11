@@ -99,6 +99,9 @@ class K8SJob(Job):
                 envlist.append({"name": key, "value": value})
             job_info["spec"]["template"]["spec"]["containers"][0]["env"] = envlist  # noqa
 
+        if "privileged" in kw and kw["privileged"] is not None:
+            job_info["spec"]["template"]["spec"]["containers"][0].setdefault("securityContext", {})["privileged"] = kw["privileged"]
+
         return job_info
 
     def get_payload(self):
