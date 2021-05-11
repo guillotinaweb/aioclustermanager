@@ -345,7 +345,7 @@ class K8SCaller(object):
         volumeMounts=None,
         envFrom=None,
         entrypoint=None,
-        privileged=False
+        privileged=False,
         **kw,
     ):
         url, version = POST_OPS["job"]
