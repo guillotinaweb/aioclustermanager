@@ -1,7 +1,8 @@
 0.3.30 (unreleased)
 -------------------
 
-- Nothing changed yet.
+- Fix typo in previous release
+  [sunbit]
 
 
 0.3.29 (2021-05-11)

@@ -363,8 +363,8 @@ class K8SCaller(object):
             volumeMounts=volumeMounts,
             envFrom=envFrom,
             entrypoint=entrypoint,
-            privileged=privileged
-            **kw,
+            privileged=privileged,
+            **kw
         )
         return await self.post(url, version, obj.payload())
 
