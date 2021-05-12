@@ -1,21 +1,21 @@
+import asyncio
+import concurrent
+import json
+import logging
+
 from aioclustermanager.k8s import const
 from aioclustermanager.k8s.delete import K8SDelete
-from aioclustermanager.k8s.executions_list import K8SExecutionList
-from aioclustermanager.k8s.deploy_list import K8SDeployList
 from aioclustermanager.k8s.deploy import K8SDeploy
+from aioclustermanager.k8s.deploy_list import K8SDeployList
+from aioclustermanager.k8s.executions_list import K8SExecutionList
 from aioclustermanager.k8s.job import K8SJob
 from aioclustermanager.k8s.job_list import K8SJobList
 from aioclustermanager.k8s.namespace import K8SNamespace
 from aioclustermanager.k8s.node_list import K8SNodeList
 from aioclustermanager.k8s.quota import K8SQuota
+from aioclustermanager.k8s.scale import K8SScale
 from aioclustermanager.k8s.tf_job import K8STFJob
 from aioclustermanager.k8s.tf_job_list import K8STFJobList
-from aioclustermanager.k8s.scale import K8SScale
-
-import asyncio
-import concurrent
-import json
-import logging
 
 logger = logging.getLogger(__name__)
 
@@ -346,6 +346,7 @@ class K8SCaller(object):
         envFrom=None,
         entrypoint=None,
         privileged=False,
+        annotations=None,
         **kw,
     ):
         url, version = POST_OPS["job"]
@@ -364,6 +365,7 @@ class K8SCaller(object):
             envFrom=envFrom,
             entrypoint=entrypoint,
             privileged=privileged,
+            annotations=annotations,
             **kw
         )
         return await self.post(url, version, obj.payload())

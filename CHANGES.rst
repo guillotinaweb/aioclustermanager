@@ -1,7 +1,8 @@
 0.3.31 (unreleased)
 -------------------
 
-- Nothing changed yet.
+- Added suport to set template metadata annotations
+  [sunbit]
 
 
 0.3.30 (2021-05-11)

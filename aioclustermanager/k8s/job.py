@@ -1,7 +1,7 @@
-from aioclustermanager.job import Job
+import json
 from copy import deepcopy
 
-import json
+from aioclustermanager.job import Job
 
 K8S_JOB = {
     "kind": "Job",
@@ -102,6 +102,8 @@ class K8SJob(Job):
         if "privileged" in kw and kw["privileged"] is not None:
             job_info["spec"]["template"]["spec"]["containers"][0].setdefault("securityContext", {})["privileged"] = kw["privileged"]
 
+        if "annotations" in kw and kw["annotations"] is not None:
+            job_info["spec"]["template"]["metadata"].setdefault("annotations", {}).update(kw["annotations"])
         return job_info
 
     def get_payload(self):
