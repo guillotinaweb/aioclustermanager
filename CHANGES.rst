@@ -1,4 +1,4 @@
-0.3.31 (unreleased)
+0.3.31 (2021-05-12)
 -------------------
 
 - Added suport to set template metadata annotations
