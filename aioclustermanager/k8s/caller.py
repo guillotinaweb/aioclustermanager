@@ -16,6 +16,8 @@ from aioclustermanager.k8s.quota import K8SQuota
 from aioclustermanager.k8s.scale import K8SScale
 from aioclustermanager.k8s.tf_job import K8STFJob
 from aioclustermanager.k8s.tf_job_list import K8STFJobList
+from aioclustermanager.exceptions import NotFoundEndpointException
+from aioclustermanager.exceptions import ConflictCallException
 
 logger = logging.getLogger(__name__)
 
@@ -477,7 +479,11 @@ class K8SCaller(object):
             if resp.status != 200:
                 text = await resp.text()
                 logger.error("Error: %d - %s" % (resp.status, text))
+            if resp.status == 404:
+                text = await resp.text()
+                raise NotFoundEndpointException("Error calling k8s: %d - %s" % (resp.status, text))
             assert resp.status == 200
+
             if noaccept:
                 return await resp.text()
             else:
@@ -494,7 +500,12 @@ class K8SCaller(object):
                 return await resp.json()
             else:
                 text = await resp.text()
-                raise Exception("Error calling k8s: %d - %s" % (resp.status, text))
+                if resp.status == 404:
+                    raise NotFoundEndpointException("Error calling k8s: %d - %s" % (resp.status, text))
+                elif resp.status == 409:
+                    raise ConflictCallException("Error calling k8s: %d - %s" % (resp.status, text))
+                else:
+                    raise Exception("Error calling k8s: %d - %s" % (resp.status, text))
 
     async def put(self, url, version, payload):
         payload["apiVersion"] = version
@@ -505,7 +516,12 @@ class K8SCaller(object):
                 return await resp.json()
             else:
                 text = await resp.text()
-                raise Exception("Error calling k8s: %d - %s" % (resp.status, text))
+                if resp.status == 404:
+                    raise NotFoundEndpointException("Error calling k8s: %d - %s" % (resp.status, text))
+                elif resp.status == 409:
+                    raise ConflictCallException("Error calling k8s: %d - %s" % (resp.status, text))
+                else:
+                    raise Exception("Error calling k8s: %d - %s" % (resp.status, text))
 
     async def post(self, url, version, payload):
         payload["apiVersion"] = version
@@ -516,7 +532,12 @@ class K8SCaller(object):
                 return await resp.json()
             else:
                 text = await resp.text()
-                raise Exception("Error calling k8s: %d - %s" % (resp.status, text))
+                if resp.status == 404:
+                    raise NotFoundEndpointException("Error calling k8s: %d - %s" % (resp.status, text))
+                elif resp.status == 409:
+                    raise ConflictCallException("Error calling k8s: %d - %s" % (resp.status, text))
+                else:
+                    raise Exception("Error calling k8s: %d - %s" % (resp.status, text))
 
     async def delete(self, url, version, payload):
         payload["apiVersion"] = version
@@ -531,7 +552,10 @@ class K8SCaller(object):
                 return None
             else:
                 text = await resp.text()
-                raise Exception("Error calling k8s: %d - %s" % (resp.status, text))
+                if resp.status == 404:
+                    raise NotFoundEndpointException("Error calling k8s: %d - %s" % (resp.status, text))
+                else:
+                    raise Exception("Error calling k8s: %d - %s" % (resp.status, text))
 
     async def get_config_maps(self, namespace, labels=None):
         selector = ""

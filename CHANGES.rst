@@ -1,7 +1,8 @@
 0.3.32 (unreleased)
 -------------------
 
-- Nothing changed yet.
+- Add exceptions in case there is conflict or not found
+  [bloodbare]
 
 
 0.3.31 (2021-05-12)
