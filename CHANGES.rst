@@ -1,4 +1,4 @@
-0.3.32 (unreleased)
+0.3.32 (2021-07-01)
 -------------------
 
 - Add exceptions in case there is conflict or not found
