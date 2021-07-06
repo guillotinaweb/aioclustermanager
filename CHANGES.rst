@@ -1,7 +1,8 @@
 0.3.33 (unreleased)
 -------------------
 
-- Nothing changed yet.
+- Allow to define the container name
+  [bloodbare]
 
 
 0.3.32 (2021-07-01)
