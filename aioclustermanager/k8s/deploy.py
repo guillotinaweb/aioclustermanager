@@ -17,7 +17,7 @@ K8S_DEPLOY = {
                 "dnsPolicy": "ClusterFirst",
                 "containers": [
                     {
-                        "name": "",
+                        "name": "container",
                         "image": "",
                         "resources": {"limits": {}},
                         "imagePullPolicy": "IfNotPresent",
@@ -57,8 +57,10 @@ class K8SDeploy(Deploy):
         deploy_info["metadata"]["name"] = name
         deploy_info["metadata"]["namespace"] = namespace
         deploy_info["spec"]["template"]["metadata"]["name"] = name
-        deploy_info["spec"]["template"]["spec"]["containers"][0]["name"] = name
         deploy_info["spec"]["template"]["spec"]["containers"][0]["image"] = image
+
+        if "container" in kw and kw["container"] is not None:
+            deploy_info["spec"]["template"]["spec"]["containers"][0]["name"] = kw["container"]
 
         if "labels" in kw and kw["labels"] is not None:
             deploy_info["metadata"]["labels"] = kw["labels"]
