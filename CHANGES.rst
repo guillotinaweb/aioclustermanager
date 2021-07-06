@@ -1,4 +1,4 @@
-0.3.33 (unreleased)
+0.3.33 (2021-07-06)
 -------------------
 
 - Allow to define the container name
