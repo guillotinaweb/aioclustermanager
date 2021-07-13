@@ -1,4 +1,4 @@
-0.3.34 (unreleased)
+0.3.34 (2021-07-14)
 -------------------
 
 - Allow to define services on k8s
