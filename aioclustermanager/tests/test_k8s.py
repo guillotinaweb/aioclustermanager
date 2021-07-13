@@ -45,6 +45,24 @@ async def test_get_deploy_k8s(kubernetes):
     deploy_info = await kubernetes.get_deploy("aiocluster-test", "test-deploy")
     assert deploy_info._raw['spec']['replicas'] == 3
 
+    ports = [{
+        "name": "http-port",
+        "port": 80,
+        "protocol": "TCP",
+        "targetPort": 80
+    }]
+    selector = {
+        "app": "nginx"
+    }
+    service = await kubernetes.caller.create_service("aiocluster-test", "test-deploy", ports=ports, selector=selector, type="ClusterIP")
+    assert service['spec'].get('clusterIP') is not None
+
+    service = await kubernetes.caller.get_service("aiocluster-test", "test-deploy")
+    assert service._raw['spec'].get('clusterIP') is not None
+
+    service = await kubernetes.caller.delete_service("aiocluster-test", "test-deploy", True)
+    assert service is True
+
     result = await kubernetes.delete_deploy("aiocluster-test", "test-deploy", True, timeout=120)
     assert result is True
 

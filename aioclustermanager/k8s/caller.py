@@ -14,6 +14,7 @@ from aioclustermanager.k8s.namespace import K8SNamespace
 from aioclustermanager.k8s.node_list import K8SNodeList
 from aioclustermanager.k8s.quota import K8SQuota
 from aioclustermanager.k8s.scale import K8SScale
+from aioclustermanager.k8s.service import K8SService
 from aioclustermanager.k8s.tf_job import K8STFJob
 from aioclustermanager.k8s.tf_job_list import K8STFJobList
 from aioclustermanager.exceptions import NotFoundEndpointException
@@ -25,6 +26,7 @@ WATCH_OPS = {
     "namespace": "{scheme}://{endpoint}/api/v1/watch/namespaces/{namespace}",
     "job": "{scheme}://{endpoint}/apis/batch/v1/watch/namespaces/{namespace}/jobs/{name}",  # noqa
     "deploy": "{scheme}://{endpoint}/apis/apps/v1/watch/namespaces/{namespace}/deployments/{name}",  # noqa
+    "service": "{scheme}://{endpoint}/api/v1/namespaces/{namespace}/services/{name}",  # noqa
     "execution": "{scheme}://{endpoint}/api/v1/watch/namespaces/{namespace}/pods/{name}",  # noqa
     "tfjob": "{scheme}://{endpoint}/apis/kubeflow.org/v1alpha1/watch/namespaces/{namespace}/tfjobs/{name}",  # noqa
 }
@@ -33,6 +35,7 @@ GET_OPS = {
     "namespace": "{scheme}://{endpoint}/api/v1/namespaces/{namespace}",
     "list_jobs": "{scheme}://{endpoint}/apis/batch/v1/namespaces/{namespace}/jobs",
     "list_deploys": "{scheme}://{endpoint}/apis/apps/v1/namespaces/{namespace}/deployments",
+    "service": "{scheme}://{endpoint}/api/v1/namespaces/{namespace}/services/{name}",  # noqa
     "deploy": "{scheme}://{endpoint}/apis/apps/v1/namespaces/{namespace}/deployments/{name}/status",  # noqa
     "job": "{scheme}://{endpoint}/apis/batch/v1/namespaces/{namespace}/jobs/{name}/status",  # noqa
     "executions": "{scheme}://{endpoint}/api/v1/namespaces/{namespace}/pods/?labelSelector=job-name={name}",  # noqa
@@ -56,6 +59,7 @@ PUT_OPS = {
 POST_OPS = {
     "namespace": ("{scheme}://{endpoint}/api/v1/namespaces", "v1"),
     "job": ("{scheme}://{endpoint}/apis/batch/v1/namespaces/{namespace}/jobs", "batch/v1"),  # noqa
+    "service": ("{scheme}://{endpoint}/api/v1/namespaces/{namespace}/services", "v1"),  # noqa
     "deploy": ("{scheme}://{endpoint}/apis/apps/v1/namespaces/{namespace}/deployments", "apps/v1"),  # noqa
     "tfjob": (
         "{scheme}://{endpoint}/apis/kubeflow.org/v1alpha1/namespaces/{namespace}/tfjobs",
@@ -67,6 +71,7 @@ POST_OPS = {
 DELETE_OPS = {
     "namespace": ("{scheme}://{endpoint}/api/v1/namespaces/{namespace}", "v1"),
     "execution": ("{scheme}://{endpoint}/api/v1/namespaces/{namespace}/pods/{name}", "v1"),  # noqa
+    "service": ("{scheme}://{endpoint}/api/v1/namespaces/{namespace}/services/{name}", "v1"),  # noqa
     "deploy": ("{scheme}://{endpoint}/apis/apps/v1/namespaces/{namespace}/deployments/{name}", "v1"),  # noqa
     "job": ("{scheme}://{endpoint}/apis/batch/v1/namespaces/{namespace}/jobs/{name}", "batch/v1"),  # noqa
     "tfjob": (
@@ -167,6 +172,15 @@ class K8SCaller(object):
         else:
             return K8SJob(data=result)
 
+    async def get_service(self, namespace, name):
+        url = GET_OPS["service"]
+        url = url.format(namespace=namespace, name=name, endpoint=self.endpoint, scheme=self.scheme)
+        result = await self.get(url)
+        if result is None:
+            return None
+        else:
+            return K8SService(data=result)
+
     async def get_deploy(self, namespace, name):
         url = GET_OPS["deploy"]
         url = url.format(namespace=namespace, name=name, endpoint=self.endpoint, scheme=self.scheme)
@@ -243,6 +257,14 @@ class K8SCaller(object):
             await to_delete
         return True
 
+    async def delete_service(self, namespace, name, purge=True):
+        url, version = DELETE_OPS["service"]
+        url = url.format(namespace=namespace, name=name, endpoint=self.endpoint, scheme=self.scheme)
+        obj = K8SDelete(purge)
+        to_delete = self.delete(url, version, obj.payload())
+        await to_delete
+        return True
+
     async def delete_execution(self, namespace, job_id, execution_id, wait=False, purge=True):
         url, version = DELETE_OPS["execution"]
         url = url.format(namespace=namespace, name=execution_id, endpoint=self.endpoint, scheme=self.scheme)
@@ -293,6 +315,27 @@ class K8SCaller(object):
             return None
         else:
             return K8STFJobList(data=result)
+
+    async def create_service(
+        self,
+        namespace,
+        name,
+        ports,
+        selector,
+        type,
+        labels=None
+    ):
+        url, version = POST_OPS["service"]
+        url = url.format(namespace=namespace, name=name, endpoint=self.endpoint, scheme=self.scheme)
+        obj = K8SService(
+            namespace=namespace,
+            labels=labels,
+            name=name,
+            ports=ports,
+            selector=selector,
+            type=type
+        )
+        return await self.post(url, version, obj.payload())
 
     async def create_deploy(
         self,
@@ -450,6 +493,8 @@ class K8SCaller(object):
         try:
             async for data in self._watch(url, timeout):
                 json_data = json.loads(data)
+                if "type" not in json_data:
+                    import pdb; pdb.set_trace()
                 if json_data["type"] == value:
                     break
         except concurrent.futures._base.TimeoutError:

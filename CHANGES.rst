@@ -1,7 +1,8 @@
 0.3.34 (unreleased)
 -------------------
 
-- Nothing changed yet.
+- Allow to define services on k8s
+  [bloodbare]
 
 
 0.3.33 (2021-07-06)
