@@ -86,6 +86,11 @@ class K8SDeploy(Deploy):
                 "entrypoint"
             ]  # noqa
 
+        if "ports" in kw and kw["ports"] is not None:
+            deploy_info["spec"]["template"]["spec"]["containers"][0]["ports"] = kw[
+                "ports"
+            ]  # noqa
+
         if "command" in kw and kw["command"] is not None:
             deploy_info["spec"]["template"]["spec"]["containers"][0]["command"] = kw[
                 "command"
