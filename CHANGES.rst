@@ -1,4 +1,4 @@
-0.3.37 (unreleased)
+0.3.37 (2021-07-14)
 -------------------
 
 - Adding readinessProbe and livenessProbe
