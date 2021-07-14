@@ -157,6 +157,16 @@ class K8SDeploy(Deploy):
             deploy_info["spec"]["template"]["spec"]["containers"][0]["securityContext"] = kw[
                 "securityContext"
             ]
+        
+        if "readinessProbe" in kw and kw["readinessProbe"] is not None:
+            deploy_info["spec"]["template"]["spec"]["containers"][0]["readinessProbe"] = kw[
+                "readinessProbe"
+            ]
+        
+        if "livenessProbe" in kw and kw["livenessProbe"] is not None:
+            deploy_info["spec"]["template"]["spec"]["containers"][0]["livenessProbe"] = kw[
+                "livenessProbe"
+            ]
 
         return deploy_info
 

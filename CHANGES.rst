@@ -1,7 +1,8 @@
 0.3.37 (unreleased)
 -------------------
 
-- Nothing changed yet.
+- Adding readinessProbe and livenessProbe
+  [bloodbare]
 
 
 0.3.36 (2021-07-14)
