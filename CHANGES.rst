@@ -1,4 +1,4 @@
-0.3.35 (unreleased)
+0.3.35 (2021-07-14)
 -------------------
 
 - Nothing changed yet.
