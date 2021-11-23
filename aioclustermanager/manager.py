@@ -146,6 +146,13 @@ class ClusterManager:
 
     # Only K8S
 
+
+    async def get_scale_statefulset(self, namespace, name):
+        return await self.caller.get_scale_statefulset(namespace, name)
+
+    async def set_scale_statefulset(self, namespace, name, scale):
+        return await self.caller.set_scale_statefulset(namespace, name, scale)
+
     async def install_tfjobs(self, namespace, cloud=None, install_helm=False):
         chart = 'https://storage.googleapis.com/tf-on-k8s-dogfood-releases/latest/tf-job-operator-chart-latest.tgz'  # noqa
         call = ['helm', 'install', chart, '-n', 'tf-job', '--wait', '--replace']  # noqa
@@ -244,6 +251,47 @@ class ClusterManager:
                 envFrom=envFrom, entrypoint=entrypoint, **kw)
             if wait:
                 await self.caller.wait_added('deploy', namespace, name=name,
+                                             timeout=timeout)
+            return True
+        return False
+
+    async def list_statefulset_pods(self, namespace, name):
+        statefulset = await self.caller.get_statefulset(namespace, name)
+        return await self.caller.get_pods(namespace, name, statefulset.selector)
+
+    async def list_statefulsets(self, namespace):
+        return await self.caller.list_statefulsets(namespace)
+
+    async def get_statefulset(self, namespace, name):
+        return await self.caller.get_statefulset(namespace, name)
+
+    async def delete_statefulset(self, namespace, name, wait, timeout=60):
+        return await self.caller.delete_statefulset(namespace, name, wait, timeout=60)
+
+    async def statefulset_wait_available(self, namespace, name, timeout=60):
+        return await self.caller.wait_available('statefulset', namespace, name, timeout=timeout)
+
+    async def create_statefulset(
+            self, namespace, name, image, labels,
+            command=None, args=None,
+            cpu_limit=None, mem_limit=None,
+            envvars={}, volumes=None, volumeMounts=None,
+            envFrom=None, entrypoint=None, replicas=1,
+            delete=False, timeout=30, wait=True, **kw):
+        exist = await self.caller.get_statefulset(namespace, name)
+        if exist is not None and delete:
+            await self.delete_statefulset(namespace, name, wait=True)
+            exist = None
+
+        if exist is None:
+            await self.caller.create_statefulset(
+                namespace, name, image, labels,
+                command=command, args=args, replicas=replicas,
+                cpu_limit=cpu_limit, mem_limit=mem_limit,
+                envvars=envvars, volumes=volumes, volumeMounts=volumeMounts,
+                envFrom=envFrom, entrypoint=entrypoint, **kw)
+            if wait:
+                await self.caller.wait_added('statefulset', namespace, name=name,
                                              timeout=timeout)
             return True
         return False

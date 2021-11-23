@@ -2,6 +2,7 @@ from pathlib import Path
 
 import os
 import yaml
+from yaml import FullLoader
 
 
 def get_inner_config(list_info, key):
@@ -19,7 +20,7 @@ def get_k8s_config():
         return config_k8s
 
     with open(home + "/.kube/config", "r") as f:
-        configuration = yaml.load(f)
+        configuration = yaml.load(f, Loader=FullLoader)
 
     TRAVIS = os.environ.get("TRAVIS", "false")
     config_k8s = {}

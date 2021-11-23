@@ -7,6 +7,8 @@ from aioclustermanager.k8s import const
 from aioclustermanager.k8s.delete import K8SDelete
 from aioclustermanager.k8s.deploy import K8SDeploy
 from aioclustermanager.k8s.deploy_list import K8SDeployList
+from aioclustermanager.k8s.statefulset import K8SStatefulSet
+from aioclustermanager.k8s.statefulset_list import K8SStatefulSetList
 from aioclustermanager.k8s.executions_list import K8SExecutionList
 from aioclustermanager.k8s.job import K8SJob
 from aioclustermanager.k8s.job_list import K8SJobList
@@ -26,6 +28,7 @@ WATCH_OPS = {
     "namespace": "{scheme}://{endpoint}/api/v1/watch/namespaces/{namespace}",
     "job": "{scheme}://{endpoint}/apis/batch/v1/watch/namespaces/{namespace}/jobs/{name}",  # noqa
     "deploy": "{scheme}://{endpoint}/apis/apps/v1/watch/namespaces/{namespace}/deployments/{name}",  # noqa
+    "statefulset": "{scheme}://{endpoint}/apis/apps/v1/watch/namespaces/{namespace}/statefulsets/{name}",  # noqa
     "service": "{scheme}://{endpoint}/api/v1/namespaces/{namespace}/services/{name}",  # noqa
     "execution": "{scheme}://{endpoint}/api/v1/watch/namespaces/{namespace}/pods/{name}",  # noqa
     "tfjob": "{scheme}://{endpoint}/apis/kubeflow.org/v1alpha1/watch/namespaces/{namespace}/tfjobs/{name}",  # noqa
@@ -35,8 +38,10 @@ GET_OPS = {
     "namespace": "{scheme}://{endpoint}/api/v1/namespaces/{namespace}",
     "list_jobs": "{scheme}://{endpoint}/apis/batch/v1/namespaces/{namespace}/jobs",
     "list_deploys": "{scheme}://{endpoint}/apis/apps/v1/namespaces/{namespace}/deployments",
+    "list_statefulsets": "{scheme}://{endpoint}/apis/apps/v1/namespaces/{namespace}/statefulsets",
     "service": "{scheme}://{endpoint}/api/v1/namespaces/{namespace}/services/{name}",  # noqa
     "deploy": "{scheme}://{endpoint}/apis/apps/v1/namespaces/{namespace}/deployments/{name}/status",  # noqa
+    "statefulset": "{scheme}://{endpoint}/apis/apps/v1/namespaces/{namespace}/statefulsets/{name}/status",  # noqa
     "job": "{scheme}://{endpoint}/apis/batch/v1/namespaces/{namespace}/jobs/{name}/status",  # noqa
     "executions": "{scheme}://{endpoint}/api/v1/namespaces/{namespace}/pods/?labelSelector=job-name={name}",  # noqa
     "deploy_pods": "{scheme}://{endpoint}/api/v1/namespaces/{namespace}/pods/?{labelselector}",  # noqa
@@ -46,12 +51,18 @@ GET_OPS = {
     "nodes": "{scheme}://{endpoint}/api/v1/nodes/",
     "configmaps": "{scheme}://{endpoint}/api/v1/namespaces/{namespace}/configmaps?{selector}",  # noqa
     "deployments": "{scheme}://{endpoint}/apis/apps/v1/namespaces/{namespace}/deployments/{name}",  # noqa
-    "scale": "{scheme}://{endpoint}/apis/apps/v1/namespaces/{namespace}/deployments/{name}/scale",  # noqa
+    "statefulsets": "{scheme}://{endpoint}/apis/apps/v1/namespaces/{namespace}/statefulsets/{name}",  # noqa
+    "scale_deploy": "{scheme}://{endpoint}/apis/apps/v1/namespaces/{namespace}/deployments/{name}/scale",  # noqa
+    "scale_statefulset": "{scheme}://{endpoint}/apis/apps/v1/namespaces/{namespace}/statefulsets/{name}/scale",  # noqa
 }
 
 PUT_OPS = {
-    "scale": (
+    "scale_deploy": (
         "{scheme}://{endpoint}/apis/apps/v1/namespaces/{namespace}/deployments/{name}/scale",
+        "autoscaling/v1",
+    ),
+    "scale_statefulset": (
+        "{scheme}://{endpoint}/apis/apps/v1/namespaces/{namespace}/statefulsets/{name}/scale",
         "autoscaling/v1",
     )  # noqa
 }
@@ -61,6 +72,7 @@ POST_OPS = {
     "job": ("{scheme}://{endpoint}/apis/batch/v1/namespaces/{namespace}/jobs", "batch/v1"),  # noqa
     "service": ("{scheme}://{endpoint}/api/v1/namespaces/{namespace}/services", "v1"),  # noqa
     "deploy": ("{scheme}://{endpoint}/apis/apps/v1/namespaces/{namespace}/deployments", "apps/v1"),  # noqa
+    "statefulset": ("{scheme}://{endpoint}/apis/apps/v1/namespaces/{namespace}/statefulsets", "apps/v1"),  # noqa
     "tfjob": (
         "{scheme}://{endpoint}/apis/kubeflow.org/v1alpha1/namespaces/{namespace}/tfjobs",
         "kubeflow.org/v1alpha1",
@@ -73,6 +85,7 @@ DELETE_OPS = {
     "execution": ("{scheme}://{endpoint}/api/v1/namespaces/{namespace}/pods/{name}", "v1"),  # noqa
     "service": ("{scheme}://{endpoint}/api/v1/namespaces/{namespace}/services/{name}", "v1"),  # noqa
     "deploy": ("{scheme}://{endpoint}/apis/apps/v1/namespaces/{namespace}/deployments/{name}", "v1"),  # noqa
+    "statefulset": ("{scheme}://{endpoint}/apis/apps/v1/namespaces/{namespace}/statefulsets/{name}", "v1"),  # noqa
     "job": ("{scheme}://{endpoint}/apis/batch/v1/namespaces/{namespace}/jobs/{name}", "batch/v1"),  # noqa
     "tfjob": (
         "{scheme}://{endpoint}/apis/kubeflow.org/v1alpha1/namespaces/{namespace}/tfjobs/{name}",
@@ -146,8 +159,25 @@ class K8SCaller(object):
         else:
             return K8SNodeList(data=result)
 
+    async def get_scale_statefulset(self, namespace, name):
+        url = GET_OPS["scale_statefulset"]
+        url = url.format(namespace=namespace, name=name, endpoint=self.endpoint, scheme=self.scheme)
+        result = await self.get(url)
+        if result is None:
+            return None
+        else:
+            return result["status"]["replicas"]
+
+    async def set_scale_statefulset(self, namespace, name, scale):
+        url, version = PUT_OPS["scale_statefulset"]
+        url = url.format(namespace=namespace, name=name, endpoint=self.endpoint, scheme=self.scheme)
+
+        obj = K8SScale(namespace, name, scale)
+
+        return await self.put(url, version, obj.payload())
+
     async def get_scale_deploy(self, namespace, name):
-        url = GET_OPS["scale"]
+        url = GET_OPS["scale_deploy"]
         url = url.format(namespace=namespace, name=name, endpoint=self.endpoint, scheme=self.scheme)
         result = await self.get(url)
         if result is None:
@@ -156,7 +186,7 @@ class K8SCaller(object):
             return result["status"]["replicas"]
 
     async def set_scale_deploy(self, namespace, name, scale):
-        url, version = PUT_OPS["scale"]
+        url, version = PUT_OPS["scale_deploy"]
         url = url.format(namespace=namespace, name=name, endpoint=self.endpoint, scheme=self.scheme)
 
         obj = K8SScale(namespace, name, scale)
@@ -189,6 +219,15 @@ class K8SCaller(object):
             return None
         else:
             return K8SDeploy(data=result)
+
+    async def get_statefulset(self, namespace, name):
+        url = GET_OPS["statefulset"]
+        url = url.format(namespace=namespace, name=name, endpoint=self.endpoint, scheme=self.scheme)
+        result = await self.get(url)
+        if result is None:
+            return None
+        else:
+            return K8SStatefulSet(data=result)
 
     async def get_tfjob(self, namespace, name):
         url = GET_OPS["tfjob"]
@@ -257,6 +296,18 @@ class K8SCaller(object):
             await to_delete
         return True
 
+    async def delete_statefulset(self, namespace, name, wait=False, purge=True, timeout=60):
+        url, version = DELETE_OPS["statefulset"]
+        url = url.format(namespace=namespace, name=name, endpoint=self.endpoint, scheme=self.scheme)
+        obj = K8SDelete(purge)
+        to_delete = self.delete(url, version, obj.payload())
+        if wait:
+            to_wait = self.wait_deleted("statefulset", namespace, name, timeout=timeout)
+            await asyncio.gather(to_wait, to_delete)
+        else:
+            await to_delete
+        return True
+
     async def delete_service(self, namespace, name, purge=True):
         url, version = DELETE_OPS["service"]
         url = url.format(namespace=namespace, name=name, endpoint=self.endpoint, scheme=self.scheme)
@@ -297,6 +348,15 @@ class K8SCaller(object):
             return None
         else:
             return K8SDeployList(data=result)
+
+    async def list_statefulsets(self, namespace):
+        url = GET_OPS["list_statefulsets"]
+        url = url.format(namespace=namespace, endpoint=self.endpoint, scheme=self.scheme)
+        result = await self.get(url)
+        if result is None:
+            return None
+        else:
+            return K8SStatefulSetList(data=result)
 
     async def list_jobs(self, namespace):
         url = GET_OPS["list_jobs"]
@@ -358,6 +418,45 @@ class K8SCaller(object):
         url, version = POST_OPS["deploy"]
         url = url.format(namespace=namespace, name=name, endpoint=self.endpoint, scheme=self.scheme)
         obj = K8SDeploy(
+            namespace=namespace,
+            labels=labels,
+            name=name,
+            image=image,
+            command=command,
+            args=args,
+            cpu_limit=cpu_limit,
+            mem_limit=mem_limit,
+            envvars=envvars,
+            volumes=volumes,
+            volumeMounts=volumeMounts,
+            envFrom=envFrom,
+            entrypoint=entrypoint,
+            replicas=replicas,
+            **kw,
+        )
+        return await self.post(url, version, obj.payload())
+
+    async def create_statefulset(
+        self,
+        namespace,
+        name,
+        image,
+        labels,
+        command=None,
+        args=None,
+        cpu_limit=None,
+        mem_limit=None,
+        envvars={},
+        volumes=None,
+        volumeMounts=None,
+        envFrom=None,
+        entrypoint=None,
+        replicas=1,
+        **kw,
+    ):
+        url, version = POST_OPS["statefulset"]
+        url = url.format(namespace=namespace, name=name, endpoint=self.endpoint, scheme=self.scheme)
+        obj = K8SStatefulSet(
             namespace=namespace,
             labels=labels,
             name=name,

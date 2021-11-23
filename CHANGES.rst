@@ -1,7 +1,7 @@
 0.3.38 (unreleased)
 -------------------
 
-- Nothing changed yet.
+- Add basic support for StatefulSets on K8S [sunbit]
 
 
 0.3.37 (2021-07-14)
