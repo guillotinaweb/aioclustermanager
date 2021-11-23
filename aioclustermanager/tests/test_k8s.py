@@ -1,5 +1,6 @@
 import pytest
 import asyncio
+import time
 
 pytestmark = pytest.mark.asyncio
 
@@ -32,6 +33,8 @@ async def test_get_deploy_k8s(kubernetes):
 
     pods = await kubernetes.list_deploy_pods("aiocluster-test", "test-deploy")
     assert len(pods) > 0
+
+    time.sleep(2)
 
     log = await kubernetes.get_execution_log("aiocluster-test", "test-deploy", pods[0].id)
     assert "ready for start up" in log
@@ -67,6 +70,77 @@ async def test_get_deploy_k8s(kubernetes):
     assert result is True
 
     job_info = await kubernetes.get_deploy("aiocluster-test", "test-deploy")
+    assert job_info is None
+
+
+async def test_get_statefulset_k8s(kubernetes):
+    # We clean up all the jobs on the namespace
+
+    result = await kubernetes.get_nodes()
+    assert len(result) > 0
+
+    jobs_info = await kubernetes.list_statefulsets("aiocluster-test")
+    assert jobs_info.total == 0
+
+    await kubernetes.create_statefulset(
+        "aiocluster-test",  # namespace
+        "test-statefulset",  # jobid
+        "nginx",  # image
+        {
+            "app": "nginx"
+        },
+        serviceName="aiocluster-test"
+    )
+
+    statefulset_info = await kubernetes.get_statefulset("aiocluster-test", "test-statefulset")
+    assert statefulset_info.id == "test-statefulset"
+
+    statefulsets_info = await kubernetes.list_statefulsets("aiocluster-test")
+    assert statefulsets_info.total == 1
+
+    # CONDITIONS not working in current version of statefulset api
+    # Meanwhile we need to wait some time so the rest of tests can pass
+    # await kubernetes.statefulset_wait_available("aiocluster-test", "test-statefulset")
+
+    time.sleep(5)
+
+    pods = await kubernetes.list_statefulset_pods("aiocluster-test", "test-statefulset")
+    assert len(pods) > 0
+
+    log = await kubernetes.get_execution_log("aiocluster-test", "test-statefulset", pods[0].id)
+    assert "ready for start up" in log
+
+    result = await kubernetes.get_scale_statefulset("aiocluster-test", "test-statefulset")
+    assert result == 1
+
+    result = await kubernetes.set_scale_statefulset("aiocluster-test", "test-statefulset", 3)
+    assert result['spec']['replicas'] == 3
+
+    statefulset_info = await kubernetes.get_statefulset("aiocluster-test", "test-statefulset")
+    assert statefulset_info._raw['spec']['replicas'] == 3
+
+    ports = [{
+        "name": "http-port",
+        "port": 80,
+        "protocol": "TCP",
+        "targetPort": 80
+    }]
+    selector = {
+        "app": "nginx"
+    }
+    service = await kubernetes.caller.create_service("aiocluster-test", "test-statefulset", ports=ports, selector=selector, type="ClusterIP")
+    assert service['spec'].get('clusterIP') is not None
+
+    service = await kubernetes.caller.get_service("aiocluster-test", "test-statefulset")
+    assert service._raw['spec'].get('clusterIP') is not None
+
+    service = await kubernetes.caller.delete_service("aiocluster-test", "test-statefulset", True)
+    assert service is True
+
+    result = await kubernetes.delete_statefulset("aiocluster-test", "test-statefulset", True, timeout=120)
+    assert result is True
+
+    job_info = await kubernetes.get_statefulset("aiocluster-test", "test-statefulset")
     assert job_info is None
 
 
