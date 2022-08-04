@@ -1,13 +1,13 @@
 0.3.40 (unreleased)
 -------------------
 
-- Nothing changed yet.
+- Allow changing job backoffLimit value [sunbit]
 
 
 0.3.39 (2021-11-30)
 -------------------
 
-- Nothing changed yet.
+- Fix previous release, missing files.
 
 
 0.3.38 (2021-11-23)
