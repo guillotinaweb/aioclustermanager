@@ -1,4 +1,4 @@
-0.3.40 (unreleased)
+0.3.40 (2022-08-04)
 -------------------
 
 - Allow changing job backoffLimit value [sunbit]
