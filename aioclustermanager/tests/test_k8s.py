@@ -161,10 +161,12 @@ async def test_get_jobs_k8s(kubernetes):
         "test-job",  # jobid
         "perl",  # image
         command=["perl", "-Mbignum=bpi", "-wle", "print bpi(2000)"],
+        backoffLimit=0
     )
 
     job_info = await kubernetes.get_job("aiocluster-test", "test-job")
     assert job_info.id == "test-job"
+    assert job_info._raw["spec"]["backoffLimit"] == 0
 
     jobs_info = await kubernetes.list_jobs("aiocluster-test")
     assert jobs_info.total == 1

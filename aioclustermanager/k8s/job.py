@@ -104,6 +104,10 @@ class K8SJob(Job):
 
         if "annotations" in kw and kw["annotations"] is not None:
             job_info["spec"]["template"]["metadata"].setdefault("annotations", {}).update(kw["annotations"])
+
+        if "backoffLimit" in kw and kw["backoffLimit"] is not None:
+            job_info["spec"]["backoffLimit"] = kw["backoffLimit"]
+
         return job_info
 
     def get_payload(self):
