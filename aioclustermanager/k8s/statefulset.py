@@ -24,7 +24,10 @@ K8S_STATEFULSET = {
                     {
                         "name": "container",
                         "image": "",
-                        "resources": {"limits": {}},
+                        "resources": {
+                            "limits": {},
+                            "requests": {}
+                        },
                         "imagePullPolicy": "IfNotPresent",
                         "ports": []
                     }
@@ -118,6 +121,20 @@ class K8SStatefulSet(StatefulSet):
                 "limits"
             ]["cpu"] = kw[
                 "cpu_limit"
+            ]  # noqa
+
+        if "mem_request" in kw and kw["mem_request"] is not None:
+            statefulset_info["spec"]["template"]["spec"]["containers"][0]["resources"][
+                "requests"
+            ]["memory"] = kw[
+                "mem_request"
+            ]  # noqa
+
+        if "cpu_request" in kw and kw["cpu_request"] is not None:
+            statefulset_info["spec"]["template"]["spec"]["containers"][0]["resources"][
+                "requests"
+            ]["cpu"] = kw[
+                "cpu_request"
             ]  # noqa
 
         if "envFrom" in kw and kw["envFrom"] is not None:
