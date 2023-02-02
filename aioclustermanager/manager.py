@@ -41,6 +41,7 @@ class ClusterManager:
             self, namespace, name, image,
             command=None, args=None,
             cpu_limit=None, mem_limit=None,
+            cpu_request=None, mem_request=None,
             envvars={}, volumes=None, volumeMounts=None,
             envFrom=None, entrypoint=None,
             delete=False, timeout=30, wait=True, **kw):
@@ -54,6 +55,7 @@ class ClusterManager:
                 namespace, name, image,
                 command=command, args=args,
                 cpu_limit=cpu_limit, mem_limit=mem_limit,
+                cpu_request=cpu_request, mem_request=mem_request,
                 envvars=envvars, volumes=volumes, volumeMounts=volumeMounts,
                 envFrom=envFrom, entrypoint=entrypoint, **kw)
             if wait:
@@ -146,7 +148,6 @@ class ClusterManager:
 
     # Only K8S
 
-
     async def get_scale_statefulset(self, namespace, name):
         return await self.caller.get_scale_statefulset(namespace, name)
 
@@ -234,6 +235,7 @@ class ClusterManager:
             self, namespace, name, image, labels,
             command=None, args=None,
             cpu_limit=None, mem_limit=None,
+            cpu_request=None, mem_request=None,
             envvars={}, volumes=None, volumeMounts=None,
             envFrom=None, entrypoint=None, replicas=1,
             delete=False, timeout=30, wait=True, **kw):
@@ -247,6 +249,7 @@ class ClusterManager:
                 namespace, name, image, labels,
                 command=command, args=args, replicas=replicas,
                 cpu_limit=cpu_limit, mem_limit=mem_limit,
+                cpu_request=cpu_request, mem_request=mem_request,
                 envvars=envvars, volumes=volumes, volumeMounts=volumeMounts,
                 envFrom=envFrom, entrypoint=entrypoint, **kw)
             if wait:
@@ -275,6 +278,7 @@ class ClusterManager:
             self, namespace, name, image, labels,
             command=None, args=None,
             cpu_limit=None, mem_limit=None,
+            cpu_request=None, mem_request=None,
             envvars={}, volumes=None, volumeMounts=None,
             envFrom=None, entrypoint=None, replicas=1,
             delete=False, timeout=30, wait=True, **kw):
@@ -288,6 +292,7 @@ class ClusterManager:
                 namespace, name, image, labels,
                 command=command, args=args, replicas=replicas,
                 cpu_limit=cpu_limit, mem_limit=mem_limit,
+                cpu_request=cpu_request, mem_request=mem_request,
                 envvars=envvars, volumes=volumes, volumeMounts=volumeMounts,
                 envFrom=envFrom, entrypoint=entrypoint, **kw)
             if wait:

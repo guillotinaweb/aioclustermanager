@@ -19,7 +19,10 @@ K8S_DEPLOY = {
                     {
                         "name": "container",
                         "image": "",
-                        "resources": {"limits": {}},
+                        "resources": {
+                            "limits": {},
+                            "requests": {}
+                        },
                         "imagePullPolicy": "IfNotPresent",
                         "ports": []
                     }
@@ -115,6 +118,20 @@ class K8SDeploy(Deploy):
                 "cpu_limit"
             ]  # noqa
 
+        if "mem_request" in kw and kw["mem_request"] is not None:
+            deploy_info["spec"]["template"]["spec"]["containers"][0]["resources"][
+                "requests"
+            ]["memory"] = kw[
+                "mem_request"
+            ]  # noqa
+
+        if "cpu_request" in kw and kw["cpu_request"] is not None:
+            deploy_info["spec"]["template"]["spec"]["containers"][0]["resources"][
+                "requests"
+            ]["cpu"] = kw[
+                "cpu_request"
+            ]  # noqa
+
         if "volumes" in kw and kw["volumes"] is not None:
             deploy_info["spec"]["template"]["spec"]["volumes"] = kw["volumes"]
 
@@ -157,12 +174,12 @@ class K8SDeploy(Deploy):
             deploy_info["spec"]["template"]["spec"]["containers"][0]["securityContext"] = kw[
                 "securityContext"
             ]
-        
+
         if "readinessProbe" in kw and kw["readinessProbe"] is not None:
             deploy_info["spec"]["template"]["spec"]["containers"][0]["readinessProbe"] = kw[
                 "readinessProbe"
             ]
-        
+
         if "livenessProbe" in kw and kw["livenessProbe"] is not None:
             deploy_info["spec"]["template"]["spec"]["containers"][0]["livenessProbe"] = kw[
                 "livenessProbe"

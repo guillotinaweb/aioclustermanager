@@ -13,7 +13,14 @@ K8S_JOB = {
             "metadata": {"name": ""},
             "spec": {
                 "containers": [
-                    {"name": "", "image": "", "resources": {"limits": {}}, "imagePullPolicy": "IfNotPresent"}
+                    {
+                        "name": "",
+                        "image": "",
+                        "resources": {
+                            "limits": {},
+                            "requests": {}
+                        },
+                        "imagePullPolicy": "IfNotPresent"}
                 ],
                 "restartPolicy": "Never",
             },
@@ -82,6 +89,20 @@ class K8SJob(Job):
         if "cpu_limit" in kw and kw["cpu_limit"] is not None:
             job_info["spec"]["template"]["spec"]["containers"][0]["resources"]["limits"]["cpu"] = kw[
                 "cpu_limit"
+            ]  # noqa
+
+        if "mem_request" in kw and kw["mem_request"] is not None:
+            job_info["spec"]["template"]["spec"]["containers"][0]["resources"][
+                "requests"
+            ]["memory"] = kw[
+                "mem_request"
+            ]  # noqa
+
+        if "cpu_request" in kw and kw["cpu_request"] is not None:
+            job_info["spec"]["template"]["spec"]["containers"][0]["resources"][
+                "requests"
+            ]["cpu"] = kw[
+                "cpu_request"
             ]  # noqa
 
         if "volumes" in kw and kw["volumes"] is not None:

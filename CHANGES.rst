@@ -1,7 +1,7 @@
 0.3.41 (unreleased)
 -------------------
 
-- Nothing changed yet.
+- Add k8s support to define mem resource requests for mem and cpu [sunbit]
 
 
 0.3.40 (2022-08-04)
