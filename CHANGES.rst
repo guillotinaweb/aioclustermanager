@@ -1,7 +1,7 @@
 0.3.42 (unreleased)
 -------------------
 
-- Nothing changed yet.
+- Update SSL
 
 
 0.3.41 (2023-02-02)
