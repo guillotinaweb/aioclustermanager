@@ -51,30 +51,39 @@ class Configuration:
         elif auth == "certificate_file":
             self.load_certificate_file()
         elif auth == "basic_auth":
-            self.basic_auth = aiohttp.BasicAuth(self.environment["user"], self.environment["credentials"])
+            self.basic_auth = aiohttp.BasicAuth(
+                self.environment["user"], self.environment["credentials"]
+            )
         elif auth == "token":
-            self.headers = {"Authorization": "Bearer " + b64decode(self.environment["token"]).decode("utf-8")}
+            self.headers = {
+                "Authorization": "Bearer "
+                + b64decode(self.environment["token"]).decode("utf-8")
+            }
 
         # We create the aiohttp client session
         if self.environment.get("skip_ssl", "false").lower() == "true":
             self.ssl_context = False
         else:
             if self.ssl_context is None:
-                self.ssl_context = ssl.SSLContext()
+                self.ssl_context = ssl.create_default_context()
 
             if self.environment.get("ca") is not None:
                 self.ssl_context.load_verify_locations(
                     cadata=b64decode(self.environment["ca"]).decode("utf-8")
                 )
             elif self.environment.get("ca_file") is not None:
-                self.ssl_context = ssl.SSLContext()
-                self.ssl_context.load_verify_locations(cafile=self.environment["ca_file"])
+                self.ssl_context = ssl.create_default_context()
+                self.ssl_context.load_verify_locations(
+                    cafile=self.environment["ca_file"]
+                )
 
         if "http_scheme" in environment:
             self.scheme = self.environment["http_scheme"]
 
         conn = aiohttp.TCPConnector(ssl=self.ssl_context, loop=self.loop)
-        self.session = aiohttp.ClientSession(connector=conn, headers=self.headers, loop=self.loop)
+        self.session = aiohttp.ClientSession(
+            connector=conn, headers=self.headers, loop=self.loop
+        )
 
     def load_in_cluster(self):
         # If the pod is running in cluster
@@ -94,23 +103,26 @@ class Configuration:
         )
 
     def load_certificate_file(self):
-        self.ssl_context = ssl.create_default_context(purpose=ssl.Purpose.CLIENT_AUTH)
+        self.ssl_context = ssl.create_default_context()
         if "key" in self.environment:
             self.ssl_context.load_cert_chain(
-                certfile=self.environment["certificate"], keyfile=self.environment["key"]
+                certfile=self.environment["certificate"],
+                keyfile=self.environment["key"],
             )
         else:
             self.ssl_context.load_cert_chain(certfile=self.environment["certificate"])
 
     def load_certificate(self):
-        self.ssl_context = ssl.create_default_context(purpose=ssl.Purpose.CLIENT_AUTH)
+        self.ssl_context = ssl.create_default_context()
         self.cert_file = tempfile.NamedTemporaryFile(delete=False)
         self.cert_file.write(b64decode(self.environment["certificate"]))
         self.cert_file.close()
         self.client_key = tempfile.NamedTemporaryFile(delete=False)
         self.client_key.write(b64decode(self.environment["key"]))
         self.client_key.close()
-        self.ssl_context.load_cert_chain(certfile=self.cert_file.name, keyfile=self.client_key.name)
+        self.ssl_context.load_cert_chain(
+            certfile=self.cert_file.name, keyfile=self.client_key.name
+        )
 
 
 class K8SContextManager:
@@ -144,4 +156,9 @@ class K8SContextManager:
 
 async def create_k8s_caller(environment):
     config = Configuration(environment)
-    return K8SCaller(config.ssl_context, environment["endpoint"], config.session, scheme=config.scheme)
+    return K8SCaller(
+        config.ssl_context,
+        environment["endpoint"],
+        config.session,
+        scheme=config.scheme,
+    )
