@@ -16,11 +16,9 @@ K8S_JOB = {
                     {
                         "name": "",
                         "image": "",
-                        "resources": {
-                            "limits": {},
-                            "requests": {}
-                        },
-                        "imagePullPolicy": "IfNotPresent"}
+                        "resources": {"limits": {}, "requests": {}},
+                        "imagePullPolicy": "IfNotPresent",
+                    }
                 ],
                 "restartPolicy": "Never",
             },
@@ -39,6 +37,16 @@ class K8SJob(Job):
     def finished(self):
         status = self._raw["status"]
         return "failed" in status or "succeeded" in status
+
+    @property
+    def failed(self):
+        status = self._raw["status"]
+        return False if "failed" not in status else status["failed"]
+
+    @property
+    def ready(self):
+        status = self._raw["status"]
+        return False if "ready" not in status else status["ready"]
 
     @property
     def id(self):
@@ -65,29 +73,43 @@ class K8SJob(Job):
 
         if "pullSecrets" in kw and kw["pullSecrets"] is not None:
             job_info["spec"]["template"]["spec"]["imagePullSecrets"] = []
-            job_info["spec"]["template"]["spec"]["imagePullSecrets"].append({"name": kw["pullSecrets"]})
+            job_info["spec"]["template"]["spec"]["imagePullSecrets"].append(
+                {"name": kw["pullSecrets"]}
+            )
 
         if "imagePullPolicy" in kw and kw["imagePullPolicy"] is not None:
-            job_info["spec"]["template"]["spec"]["containers"][0]["imagePullPolicy"] = kw[
+            job_info["spec"]["template"]["spec"]["containers"][0][
+                "imagePullPolicy"
+            ] = kw[
                 "imagePullPolicy"
             ]  # noqa
 
         if "entrypoint" in kw and kw["entrypoint"] is not None:
-            job_info["spec"]["template"]["spec"]["containers"][0]["entrypoint"] = kw["entrypoint"]  # noqa
+            job_info["spec"]["template"]["spec"]["containers"][0]["entrypoint"] = kw[
+                "entrypoint"
+            ]  # noqa
 
         if "command" in kw and kw["command"] is not None:
-            job_info["spec"]["template"]["spec"]["containers"][0]["command"] = kw["command"]  # noqa
+            job_info["spec"]["template"]["spec"]["containers"][0]["command"] = kw[
+                "command"
+            ]  # noqa
 
         if "args" in kw and kw["args"] is not None:
-            job_info["spec"]["template"]["spec"]["containers"][0]["args"] = kw["args"]  # noqa
+            job_info["spec"]["template"]["spec"]["containers"][0]["args"] = kw[
+                "args"
+            ]  # noqa
 
         if "mem_limit" in kw and kw["mem_limit"] is not None:
-            job_info["spec"]["template"]["spec"]["containers"][0]["resources"]["limits"]["memory"] = kw[
+            job_info["spec"]["template"]["spec"]["containers"][0]["resources"][
+                "limits"
+            ]["memory"] = kw[
                 "mem_limit"
             ]  # noqa
 
         if "cpu_limit" in kw and kw["cpu_limit"] is not None:
-            job_info["spec"]["template"]["spec"]["containers"][0]["resources"]["limits"]["cpu"] = kw[
+            job_info["spec"]["template"]["spec"]["containers"][0]["resources"][
+                "limits"
+            ]["cpu"] = kw[
                 "cpu_limit"
             ]  # noqa
 
@@ -109,22 +131,32 @@ class K8SJob(Job):
             job_info["spec"]["template"]["spec"]["volumes"] = kw["volumes"]
 
         if "volumeMounts" in kw and kw["volumeMounts"] is not None:
-            job_info["spec"]["template"]["spec"]["containers"][0]["volumeMounts"] = kw["volumeMounts"]  # noqa
+            job_info["spec"]["template"]["spec"]["containers"][0]["volumeMounts"] = kw[
+                "volumeMounts"
+            ]  # noqa
 
         if "envFrom" in kw and kw["envFrom"] is not None:
-            job_info["spec"]["template"]["spec"]["containers"][0]["envFrom"] = kw["envFrom"]  # noqa
+            job_info["spec"]["template"]["spec"]["containers"][0]["envFrom"] = kw[
+                "envFrom"
+            ]  # noqa
 
         if "envvars" in kw and kw["envvars"] is not None:
             envlist = []
             for key, value in kw["envvars"].items():
                 envlist.append({"name": key, "value": value})
-            job_info["spec"]["template"]["spec"]["containers"][0]["env"] = envlist  # noqa
+            job_info["spec"]["template"]["spec"]["containers"][0][
+                "env"
+            ] = envlist  # noqa
 
         if "privileged" in kw and kw["privileged"] is not None:
-            job_info["spec"]["template"]["spec"]["containers"][0].setdefault("securityContext", {})["privileged"] = kw["privileged"]
+            job_info["spec"]["template"]["spec"]["containers"][0].setdefault(
+                "securityContext", {}
+            )["privileged"] = kw["privileged"]
 
         if "annotations" in kw and kw["annotations"] is not None:
-            job_info["spec"]["template"]["metadata"].setdefault("annotations", {}).update(kw["annotations"])
+            job_info["spec"]["template"]["metadata"].setdefault(
+                "annotations", {}
+            ).update(kw["annotations"])
 
         if "backoffLimit" in kw and kw["backoffLimit"] is not None:
             job_info["spec"]["backoffLimit"] = kw["backoffLimit"]

@@ -1,7 +1,7 @@
 0.3.43 (unreleased)
 -------------------
 
-- Nothing changed yet.
+- Add Job status
 
 
 0.3.42 (2024-01-26)
