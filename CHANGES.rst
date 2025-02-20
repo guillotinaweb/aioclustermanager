@@ -1,4 +1,4 @@
-0.3.44 (unreleased)
+0.3.44 (2025-02-20)
 -------------------
 
 - Add terminating job status
