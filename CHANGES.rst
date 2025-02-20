@@ -1,7 +1,7 @@
 0.3.44 (unreleased)
 -------------------
 
-- Nothing changed yet.
+- Add terminating job status
 
 
 0.3.43 (2024-10-02)

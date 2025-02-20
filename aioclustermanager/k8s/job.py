@@ -49,6 +49,11 @@ class K8SJob(Job):
         return False if "ready" not in status else status["ready"]
 
     @property
+    def terminating(self):
+        status = self._raw["status"]
+        return False if "terminating" not in status else status["terminating"]
+
+    @property
     def id(self):
         return self._raw["metadata"]["name"]
 
